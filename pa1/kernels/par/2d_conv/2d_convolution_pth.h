@@ -3,7 +3,7 @@
 /**BeginCopyright************************************************************
  *
  * $HeadURL$
- * $Id: 85fd4f00e63e8f99862277e21fcdb88da31f9a08 $
+ * $Id: 0f20d31e43e0bd96691cd566c16b518ebe026a5b $
  *
  *---------------------------------------------------------------------------
  * Part of PERFECT Benchmark Suite (hpc.pnnl.gov/projects/PERFECT/)
@@ -66,10 +66,10 @@
  *
  **EndCopyright*************************************************************/
 
-/**************************/
-/***    UNCLASSIFIED    ***/
-/**************************/
+#ifndef _TAV_2D_CONVOLUTION_
+#define _TAV_2D_CONVOLUTION_
 
+#include <stdint.h>
 /***
 
   ALL SOURCE CODE PRESENT IN THIS FILE IS UNCLASSIFIED AND IS
@@ -91,101 +91,24 @@
   THIS HEADER SHALL REMAIN PART OF ALL SOURCE CODE FILES.
 
  ***/
+#include <math.h>
+#include <limits.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
+#define M 64  /* columns */
+#define N 48  /* rows */
 
-//#include "xmem/xmalloc.h"
-#include "2d_convolution_pth.h"
+typedef float fltPixel_t;
+typedef int algPixel_t;
 
-// #define printf(...)
-// #define fprintf(...)
-// #define fflush(...)
+extern algPixel_t * frame;
+extern algPixel_t * output;
 
-struct indices{
-    int curr_row;
-    int curr_col;
-};
+extern int nFilterRowsFD; 
+extern int nFilterColsFD;
 
-algPixel_t *tmpBuf = NULL;
-
-void* multiply_accumulate(void* index)
-{
-  float sum = 0.0;
-  int m = 0, n = 0;
-  struct indices* curr_index = (struct indices* )index;
-  int row = curr_index->curr_row;
-  int col = curr_index->curr_col;
-  int rowOffset = nFilterRowsFD / 2;
-  int colOffset = nFilterColsFD / 2;
-  int rowBegIndex = rowOffset;
-  int colBegIndex = colOffset;
-  int pxlPos = 0;
-  int fltPos = 0;
-
-  for (int i = row - rowOffset; i <= row + rowOffset; i++)
-  {
-    n = 0;
-    for (int j = col - colOffset; j <= col + colOffset; j++)
-    {
-      pxlPos = i * (M + nFilterColsFD) + j;
-      fltPos = m * nFilterColsFD + n;
-      sum += ((fltPixel_t) tmpBuf[pxlPos] * FD[fltPos]);
-      n++;
-    }
-    m++;
-  }
-  output[(row - rowBegIndex) * M + (col - colBegIndex)] = (algPixel_t) (sum);
-
-  return NULL;
-}
+extern fltPixel_t *FD;
 
 int
-conv2d ()
-{
-  // float sum = 0.0;
-  // int m = 0, n = 0;
-  // int i = 0, j = 0;
-  // int row = 0, col = 0;
-  int rowOffset = nFilterRowsFD / 2;
-  int colOffset = nFilterColsFD / 2;
-  int rowBegIndex = rowOffset;
-  int colBegIndex = colOffset;
-  // int pxlPos = 0;
-  // int fltPos = 0;
+conv2d ();
 
-  tmpBuf = (algPixel_t *)calloc((N + nFilterRowsFD) * (M + nFilterColsFD), sizeof(algPixel_t));
-  if (!tmpBuf)
-  {
-  //   fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);
-    return -1;
-  }
-
-  for (int row = 0; row < N; row++)
-  {
-    {
-      memcpy((void *)(tmpBuf + (row + rowOffset) * (M + nFilterColsFD) + colOffset), 
-	  (void *)(frame + row * M), M * sizeof(algPixel_t));
-    }
-  }
-
-  pthread_t thread_id[N][M];
-
-  for (int row = rowBegIndex; row < N + rowOffset; row++)
-  {
-    for (int col = colBegIndex; col < M + colOffset; col++)
-    {
-      struct indices index = {row, col};
-      pthread_create(&thread_id[row-rowOffset][col-colOffset], NULL, multiply_accumulate, (void* )&index);
-    }
-      // __asm__("nop");
-  }
-
-  // pthread_exit(NULL);
-
-  free((void *)tmpBuf);
-
-  return 0;
-}
+#endif /* _TAV_2D_CONVOLUTION_ */

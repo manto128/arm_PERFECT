@@ -3,7 +3,7 @@
 /**BeginCopyright************************************************************
  *
  * $HeadURL$
- * $Id: 85fd4f00e63e8f99862277e21fcdb88da31f9a08 $
+ * $Id: 3824146209f01fefa9a42b92b431ccda926f23c6 $
  *
  *---------------------------------------------------------------------------
  * Part of PERFECT Benchmark Suite (hpc.pnnl.gov/projects/PERFECT/)
@@ -65,11 +65,13 @@
  *    OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **EndCopyright*************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/**************************/
-/***    UNCLASSIFIED    ***/
-/**************************/
-
+// #include "bareBench.h"
+#include "input_array_xs.h"
+// #include "out_xs.h"
 /***
 
   ALL SOURCE CODE PRESENT IN THIS FILE IS UNCLASSIFIED AND IS
@@ -91,101 +93,133 @@
   THIS HEADER SHALL REMAIN PART OF ALL SOURCE CODE FILES.
 
  ***/
+//#include <time.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
+//#include "timer.h"
 
 //#include "xmem/xmalloc.h"
+//#include "octave.h"
 #include "2d_convolution_pth.h"
 
-// #define printf(...)
-// #define fprintf(...)
-// #define fflush(...)
+// #if !defined(BATCH_SIZE)
+#define BATCH_SIZE (1)
+// #endif
 
-struct indices{
-    int curr_row;
-    int curr_col;
+int nFilterRowsFD = 9;
+int nFilterColsFD = 9;
+
+fltPixel_t* FD = (fltPixel_t[81]) {
+  1,   3,   4,   5,   6,   5,  4,    3,  1,
+  3,   9,  12,  15,  18,  15,  12,   9,  3,
+  4,  12,  16,  20,  24,  20,  16,  12,  4,
+  5,  15,  20,  25,  30,  25,  20,  15,  5,
+  6,  18,  24,  30,  36,  30,  24,  18,  6,
+  5,  15,  20,  25,  30,  25,  20,  15,  5,
+  4,  12,  16,  20,  24,  20,  16,  12,  4,
+  3,   9,  12,  15,  18,  15,  12,   9,  3,
+  1,   3,   4,   5,   6,   5,   4,   3,  1
 };
 
-algPixel_t *tmpBuf = NULL;
+algPixel_t* frame = NULL;
+algPixel_t* output = NULL;
 
-void* multiply_accumulate(void* index)
+int main (int argc, char * argv[])
 {
-  float sum = 0.0;
-  int m = 0, n = 0;
-  struct indices* curr_index = (struct indices* )index;
-  int row = curr_index->curr_row;
-  int col = curr_index->curr_col;
-  int rowOffset = nFilterRowsFD / 2;
-  int colOffset = nFilterColsFD / 2;
-  int rowBegIndex = rowOffset;
-  int colBegIndex = colOffset;
-  int pxlPos = 0;
-  int fltPos = 0;
-
-  for (int i = row - rowOffset; i <= row + rowOffset; i++)
+  int i, j;
+ 
+  for (i = 0; i < nFilterRowsFD * nFilterColsFD; i++)
   {
-    n = 0;
-    for (int j = col - colOffset; j <= col + colOffset; j++)
-    {
-      pxlPos = i * (M + nFilterColsFD) + j;
-      fltPos = m * nFilterColsFD + n;
-      sum += ((fltPixel_t) tmpBuf[pxlPos] * FD[fltPos]);
-      n++;
-    }
-    m++;
-  }
-  output[(row - rowBegIndex) * M + (col - colBegIndex)] = (algPixel_t) (sum);
-
-  return NULL;
-}
-
-int
-conv2d ()
-{
-  // float sum = 0.0;
-  // int m = 0, n = 0;
-  // int i = 0, j = 0;
-  // int row = 0, col = 0;
-  int rowOffset = nFilterRowsFD / 2;
-  int colOffset = nFilterColsFD / 2;
-  int rowBegIndex = rowOffset;
-  int colBegIndex = colOffset;
-  // int pxlPos = 0;
-  // int fltPos = 0;
-
-  tmpBuf = (algPixel_t *)calloc((N + nFilterRowsFD) * (M + nFilterColsFD), sizeof(algPixel_t));
-  if (!tmpBuf)
-  {
-  //   fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);
-    return -1;
+    FD[i] /= (1024.0);
   }
 
-  for (int row = 0; row < N; row++)
-  {
-    {
-      memcpy((void *)(tmpBuf + (row + rowOffset) * (M + nFilterColsFD) + colOffset), 
-	  (void *)(frame + row * M), M * sizeof(algPixel_t));
-    }
+  //ABSO TODO : seed with known val
+  //srand (time (NULL));
+
+  //STATS_INIT ();  //updated to dummy
+  //PRINT_STAT_STRING ("kernel", "2d_convolution");
+  //PRINT_STAT_INT ("rows", N);
+  //PRINT_STAT_INT ("columns", M);
+  //PRINT_STAT_INT ("num_frames", BATCH_SIZE);
+
+  frame = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
+  output = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
+
+  if (!frame || !output) {
+    //fprintf(stderr, "ERROR: Allocation failed.\n");
+    exit(-1);
   }
 
-  pthread_t thread_id[N][M];
+  /* load image */
+  //tic ();
 
-  for (int row = rowBegIndex; row < N + rowOffset; row++)
+  //printf("Starting read array  \n");
+  //read_array_from_octave (frame, N, M, FILENAME);
+  memcpy(frame, inp_data, M * N * sizeof(algPixel_t));
+  // FILE *f = fopen("input_array.h", "w");
+  
+  // if(f == NULL)
+  // {
+  //     printf("Error: File error\n");
+  // }
+
+  // int r,c;
+  // for(r=0; r<N; r++)
+  // {
+  //   for(c=0; c<M; c++)
+  //   {
+  //       fprintf(f, "%d", frame[r*N+c]);
+  //       fprintf(f, "%s", ",");
+  //       fprintf(f, "%s", " ");
+  //   }
+  //   fprintf(f, "%s", "\n");
+  // }
+  // fclose(f);
+
+  //PRINT_STAT_DOUBLE ("time_load_image", toc ());
+
+  /* Make BATCH_SIZE-1 copies */
+  //tic ();
+  // for (i = 1; i < BATCH_SIZE; i++) {
+  //   memcpy (&frame[i * M * N], frame, M * N * sizeof(algPixel_t));
+  // }
+  //PRINT_STAT_DOUBLE ("time_copy", toc ());
+
+  /* Perform the 2D convolution */
+  //tic ();
+
+  //__asm__ __volatile__("mov r9, r9");
+  for (i = 0; i < BATCH_SIZE; i++) {
+    conv2d ();
+  }
+  //__asm__ __volatile__("mov r9, r9");
+  //PRINT_STAT_DOUBLE ("time_2d_convolution", toc ());
+
+  /* Write the results out to disk */
+  //for (i = 0; i < BATCH_SIZE; i++) {
+    //char buffer [30];
+    //sprintf (buffer, "2dconv_output." SIZE ".%d.mat", i);
+    //write_array_to_octave (&output[i * M * N], N, M, buffer, "output");
+  //}
+  //PRINT_STAT_STRING ("output_file", "2dconv_output." SIZE ".#.mat");
+
+  //STATS_END ();
+
+  //int flag = 1;
+
+  //check correctness
+  for(i=0; i<N; i++)
   {
-    for (int col = colBegIndex; col < M + colOffset; col++)
-    {
-      struct indices index = {row, col};
-      pthread_create(&thread_id[row-rowOffset][col-colOffset], NULL, multiply_accumulate, (void* )&index);
-    }
-      // __asm__("nop");
+   for(j=0; j<M; j++)
+   {
+       printf("%d ", output[i*M + j]);
+   }
+   printf("\n");
   }
 
-  // pthread_exit(NULL);
-
-  free((void *)tmpBuf);
+  
+  free (output);
+  free (frame);
 
   return 0;
 }
+

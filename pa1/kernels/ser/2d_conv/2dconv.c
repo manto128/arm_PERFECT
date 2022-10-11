@@ -99,9 +99,9 @@
 //#include "xmem/xmalloc.h"
 #include "2d_convolution.h"
 
-#define printf(...)
-#define fprintf(...)
-#define fflush(...)
+// #define printf(...)
+// #define fprintf(...)
+// #define fflush(...)
 
 int
 conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filter, float normFactor, int nFilterRows, int nFilterCols)
@@ -117,7 +117,7 @@ conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filte
   int pxlPos = 0;
   int fltPos = 0;
 
-  algPixel_t *tmpBuf = (algPixel_t *)malloc((nRows + nFilterRows) * (nCols + nFilterCols)/*, sizeof(algPixel_t)*/);
+  algPixel_t *tmpBuf = (algPixel_t *)calloc((nRows + nFilterRows) * (nCols + nFilterCols), sizeof(algPixel_t));
   if (!tmpBuf)
   {
     fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);

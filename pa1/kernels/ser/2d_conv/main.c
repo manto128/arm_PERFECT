@@ -69,7 +69,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bareBench.h"
+// #include "bareBench.h"
 #include "input_array_xs.h"
 #include "out_xs.h"
 /***
@@ -139,7 +139,7 @@ int main (int argc, char * argv[])
 {
   int * frame;
   int * output;
-  int i;
+  int i, j;
 
   int nFilterRowsFD = 9; 
   int nFilterColsFD = 9;
@@ -176,8 +176,8 @@ int main (int argc, char * argv[])
   //PRINT_STAT_INT ("num_frames", BATCH_SIZE);
 
 
-  frame = malloc (M * N * BATCH_SIZE) ;//, sizeof(algPixel_t));
-  output = malloc (M * N * BATCH_SIZE); //, sizeof(algPixel_t));
+  frame = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
+  output = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
 
 
   if (!frame || !output) {
@@ -224,11 +224,11 @@ int main (int argc, char * argv[])
   /* Perform the 2D convolution */
   //tic ();
 
-  __asm__ __volatile__("mov r9, r9");
+  // __asm__ __volatile__("mov r9, r9");
   for (i = 0; i < BATCH_SIZE; i++) {
     conv2d (&frame[i * M * N], &output[i * M * N], N, M, FD, 1.0, nFilterRowsFD, nFilterColsFD);
   }
-  __asm__ __volatile__("mov r9, r9");
+  // __asm__ __volatile__("mov r9, r9");
   //PRINT_STAT_DOUBLE ("time_2d_convolution", toc ());
 
   /* Write the results out to disk */
@@ -245,17 +245,16 @@ int main (int argc, char * argv[])
 
 
   //check correctness
-  //for(i=0; i<N && flag; i++)
-  //{
-  //  for(j=0; j<M && flag; j++)
-  //  {
-  //      if(output[i*M+j] != out_data[i*M+j])
-  //      {
-  //        flag = 0;
-  //      }
-  //  }
-  //}
+  for(i=0; i<N; i++)
+  {
+   for(j=0; j<M; j++)
+   {
+       printf("%d ", output[i*M + j]);
+   }
+   printf("\n");
+  }
 
+  fflush(stdout);
   
   free (output);
   free (frame);

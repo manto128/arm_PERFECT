@@ -119,18 +119,17 @@ conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filte
   int fltPos = 0;
 
   algPixel_t *tmpBuf = (algPixel_t *)calloc((nRows + nFilterRows) * (nCols + nFilterCols), sizeof(algPixel_t));
-  // if (!tmpBuf)
-  // {
+  if (!tmpBuf)
+  {
   //   fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);
-  //   return -1;
-  // }
+    return -1;
+  }
 
   for (row = 0; row < nRows; row++)
   {
     {
       memcpy((void *)(tmpBuf + (row + rowOffset) * (nCols + nFilterCols) + colOffset), 
-	  (void *)(in + row * nCols), 
-	  nCols * sizeof(algPixel_t));
+	  (void *)(in + row * nCols), nCols * sizeof(algPixel_t));
     }
   }
 

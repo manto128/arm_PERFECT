@@ -69,9 +69,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bareBench.h"
+// #include "bareBench.h"
 #include "input_array_xs.h"
-#include "out_xs.h"
+// #include "out_xs.h"
 /***
 
   ALL SOURCE CODE PRESENT IN THIS FILE IS UNCLASSIFIED AND IS
@@ -101,19 +101,67 @@
 //#include "octave.h"
 #include "2d_convolution.h"
 
-#if !defined(BATCH_SIZE)
+//#if !defined(BATCH_SIZE)
 #define BATCH_SIZE (1)
+//#endif
+
+#if 1
+#define M 64  /* columns */
+#define N 48  /* rows */
+#define FILENAME "../../../input/input_small.mat"
+#define SIZE "small"
+
+#elif INPUT_SIZE == INPUT_SIZE_SMALL
+#define M 640  /* columns */
+#define N 480  /* rows */
+#define FILENAME "../../../input/input_small.mat"
+#define SIZE "small"
+
+#elif INPUT_SIZE == INPUT_SIZE_MEDIUM
+#define M 1920  /* columns */
+#define N 1080  /* rows */
+#define FILENAME "../../../input/input_medium.mat"
+#define SIZE "medium"
+
+#elif INPUT_SIZE == INPUT_SIZE_LARGE
+#define M 3840  /* columns */
+#define N 2160  /* rows */
+#define FILENAME "../../../input/input_large.mat"
+#define SIZE "large"
+
+#else
+#error "Unhandled value for INPUT_SIZE"
 #endif
+
+
 
 int main (int argc, char * argv[])
 {
-  int i;
+  int * frame;
+  int * output;
+  int i, j;
+
+  int nFilterRowsFD = 9; 
+  int nFilterColsFD = 9;
+
+	  
+  fltPixel_t FD[] =  {
+			 1,   3,   4,   5,   6,   5,  4,    3,  1,
+			 3,   9,  12,  15,  18,  15,  12,   9,  3,
+			 4,  12,  16,  20,  24,  20,  16,  12,  4,
+			 5,  15,  20,  25,  30,  25,  20,  15,  5,
+			 6,  18,  24,  30,  36,  30,  24,  18,  6,
+			 5,  15,  20,  25,  30,  25,  20,  15,  5,
+			 4,  12,  16,  20,  24,  20,  16,  12,  4,
+			 3,   9,  12,  15,  18,  15,  12,   9,  3,
+			 1,   3,   4,   5,   6,   5,   4,   3,  1
+  };
+
  
   for (i = 0; i < nFilterRowsFD * nFilterColsFD; i++)
   {
     FD[i] /= (1024.0);
   }
-
 
   //ABSO TODO : seed with known val
   //srand (time (NULL));
@@ -124,15 +172,13 @@ int main (int argc, char * argv[])
   //PRINT_STAT_INT ("columns", M);
   //PRINT_STAT_INT ("num_frames", BATCH_SIZE);
 
-
   frame = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
   output = calloc (M * N * BATCH_SIZE, sizeof(algPixel_t));
 
   if (!frame || !output) {
-    //fprintf(stderr, "ERROR: Allocation failed.\n");
+    // fprintf(stderr, "ERROR: Allocation failed.\n");
     exit(-1);
   }
-
 
   /* load image */
   //tic ();
@@ -164,19 +210,19 @@ int main (int argc, char * argv[])
 
   /* Make BATCH_SIZE-1 copies */
   //tic ();
-  for (i = 1; i < BATCH_SIZE; i++) {
-    memcpy (&frame[i * M * N], frame, M * N * sizeof(algPixel_t));
-  }
+  // for (i = 1; i < BATCH_SIZE; i++) {
+  //   memcpy (&frame[i * M * N], frame, M * N * sizeof(algPixel_t));
+  // }
   //PRINT_STAT_DOUBLE ("time_copy", toc ());
 
   /* Perform the 2D convolution */
   //tic ();
 
-  //__asm__ __volatile__("mov r9, r9");
+  // __asm__ __volatile__("mov r9, r9");
   for (i = 0; i < BATCH_SIZE; i++) {
-    conv2d ();
+    conv2d (&frame[i * M * N], &output[i * M * N], N, M, FD, 1.0, nFilterRowsFD, nFilterColsFD);
   }
-  //__asm__ __volatile__("mov r9, r9");
+  // __asm__ __volatile__("mov r9, r9");
   //PRINT_STAT_DOUBLE ("time_2d_convolution", toc ());
 
   /* Write the results out to disk */
@@ -193,46 +239,18 @@ int main (int argc, char * argv[])
 
 
   //check correctness
-  //for(i=0; i<N && flag; i++)
-  //{
-  //  for(j=0; j<M && flag; j++)
-  //  {
-  //      if(output[i*M+j] != out_data[i*M+j])
-  //      {
-  //        flag = 0;
-  //      }
-  //  }
-  //}
+  for(i=0; i<N; i++)
+  {
+   for(j=0; j<M; j++)
+   {
+       printf("%d ", output[i*M + j]);
+   }
+   printf("\n");
+  }
 
   
   free (output);
   free (frame);
-
-  /*
-  if(flag == 0)
-  {
-    __asm__("nop");
-    __asm__("nop");
-    __asm__("nop");
-    __asm__("nop");
-    __asm__("nop");
-  }
-  else
-  {
-     __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-  __asm__("nop");
-    
-  }
-  */
-
- 
 
   return 0;
 }

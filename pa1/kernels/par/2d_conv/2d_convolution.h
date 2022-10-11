@@ -97,28 +97,7 @@
 typedef float fltPixel_t;
 typedef int algPixel_t;
 
-#define M 64  /* columns */
-#define N 48  /* rows */
-
-algPixel_t * frame;
-algPixel_t * output;
-
-int nFilterRowsFD = 9; 
-int nFilterColsFD = 9;
-
-fltPixel_t FD[] =  {
-			 1,   3,   4,   5,   6,   5,  4,    3,  1,
-			 3,   9,  12,  15,  18,  15,  12,   9,  3,
-			 4,  12,  16,  20,  24,  20,  16,  12,  4,
-			 5,  15,  20,  25,  30,  25,  20,  15,  5,
-			 6,  18,  24,  30,  36,  30,  24,  18,  6,
-			 5,  15,  20,  25,  30,  25,  20,  15,  5,
-			 4,  12,  16,  20,  24,  20,  16,  12,  4,
-			 3,   9,  12,  15,  18,  15,  12,   9,  3,
-			 1,   3,   4,   5,   6,   5,   4,   3,  1
-  };
-
 int
-conv2d ();
+conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filter, float normFactor, int nFilterRows, int nFilterCols);
 
 #endif /* _TAV_2D_CONVOLUTION_ */
