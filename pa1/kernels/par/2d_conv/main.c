@@ -239,14 +239,14 @@ int main (int argc, char * argv[])
 
 
   //check correctness
-  for(i=0; i<N; i++)
-  {
-   for(j=0; j<M; j++)
-   {
-       printf("%d ", output[i*M + j]);
-   }
-   printf("\n");
-  }
+  // for(i=0; i<N; i++)
+  // {
+  //  for(j=0; j<M; j++)
+  //  {
+  //      printf("%d ", output[i*M + j]);
+  //  }
+  //  printf("\n");
+  // }
 
   
   free (output);

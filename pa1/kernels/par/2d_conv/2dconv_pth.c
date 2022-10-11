@@ -104,7 +104,7 @@
 // #define fprintf(...)
 // #define fflush(...)
 
-struct indices{
+struct indices {
     int curr_row;
     int curr_col;
 };
@@ -172,13 +172,14 @@ conv2d ()
   }
 
   pthread_t thread_id[N][M];
+  struct indices index[N][M];
 
   for (int row = rowBegIndex; row < N + rowOffset; row++)
   {
     for (int col = colBegIndex; col < M + colOffset; col++)
     {
-      struct indices index = {row, col};
-      pthread_create(&thread_id[row-rowOffset][col-colOffset], NULL, multiply_accumulate, (void* )&index);
+      index[row-rowOffset][col-colOffset] = (struct indices) {row, col};
+      pthread_create(&thread_id[row-rowOffset][col-colOffset], NULL, multiply_accumulate, (void* )&index[row-rowOffset][col-colOffset]);
     }
       // __asm__("nop");
   }
