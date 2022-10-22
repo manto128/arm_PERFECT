@@ -1,2 +1,0 @@
-#define printf(...)
-#define fprintf(...)
