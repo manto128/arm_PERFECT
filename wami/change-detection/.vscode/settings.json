@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "wami_utils.h": "c",
+        "means.h": "c",
+        "wami_params.h": "c"
+    }
+}
