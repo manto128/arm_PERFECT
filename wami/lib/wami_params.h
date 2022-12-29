@@ -116,9 +116,9 @@ typedef struct _rgb_pixel
     #error "Unhandled value for INPUT_SIZE"
 #endif
 
-#define WAMI_GMM_NUM_MODELS 5
+#define WAMI_GMM_NUM_MODELS 2
 
-#define WAMI_GMM_NUM_FRAMES 5
+#define WAMI_GMM_NUM_FRAMES 2
 
 #define WAMI_DEBAYER_PAD 2
 
