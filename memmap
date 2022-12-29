@@ -12,7 +12,7 @@ SECTIONS
     .bss : { *(.bss*) } > ram
     .heap : { *(.heap*) } > h
 }
-    end = ORIGIN(h) + LENGTH(h);
+    end = ORIGIN(h);
 
 heapCurrent = ORIGIN(h);
 
