@@ -73,7 +73,7 @@
 #include <math.h>
 #include <limits.h>
 
-typedef float fltPixel_t;
+typedef  float fltPixel_t;
 typedef int algPixel_t;
 
 float

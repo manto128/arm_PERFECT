@@ -71,20 +71,23 @@
 #include <string.h>
 #include <time.h>
 
-//#include "../../lib/xmalloc.h"
 #include "wami_lucas_kanade.h"
-#include "dx.h"
-#include "dy.h"
+#include "dx_256.h"
+#include "dy_256.h"
 
-#define M 512  /* columns */
-#define N 512  /* rows */
+#define M 256  /* columns */
+#define N 256  /* rows */
 
 
 int main (int argc, char * argv[])
 {
+  /*int i, j, index;
+  float avg;
+  FILE *dxptr = fopen("dx_256.h", "w");
+  FILE *dyptr = fopen("dy_256.h", "w");*/
   /* Input gradients */
-  fltPixel_t * gradX;
-  fltPixel_t * gradY;
+  //fltPixel_t * gradX;
+  //fltPixel_t * gradY;
   /* Warped input gradients */
   fltPixel_t * gradX_warped;
   fltPixel_t * gradY_warped;
@@ -97,17 +100,17 @@ int main (int argc, char * argv[])
   /* Warp/ pixel transformation matrix */
   float W_xp[9];
 
-  gradX = calloc (M * N, sizeof(fltPixel_t));
-  gradY = calloc (M * N, sizeof(fltPixel_t));
+  //gradX = calloc (M * N, sizeof(fltPixel_t));
+  //gradY = calloc (M * N, sizeof(fltPixel_t));
   gradX_warped = calloc (M * N, sizeof(fltPixel_t));
   gradY_warped = calloc (M * N, sizeof(fltPixel_t));
   I_steepest = calloc (6 * M * N, sizeof(fltPixel_t));
   H = calloc (6 * 6, sizeof(float));
 
-  if (!gradX || !gradY || !gradX_warped || !gradY_warped || !I_steepest || !H) {
+  if (/*!gradX || !gradY ||*/ !gradX_warped || !gradY_warped || !I_steepest || !H) {
     fprintf(stderr, "ERROR: Allocation failed.\n");
-    free (gradX);
-    free (gradY);
+    //free (gradX);
+    //free (gradY);
     free (gradX_warped);
     free (gradY_warped);
     free (I_steepest);
@@ -115,15 +118,6 @@ int main (int argc, char * argv[])
     exit(-1);
   }
 
-  /* Load horizontal and vertical gradients of the input image */
-  //populate gradX and gradY from header files
-  for(int i = 0; i < 262144; i++) {
-    gradX[i] = (fltPixel_t) dx[i]; 
-  }
-
-  for(int i = 0; i < 262144; i++) {
-    gradY[i] = (fltPixel_t) dy[i]; 
-  }
 
   /* Warp the gradient I with W(x;p) */
     /* p */
@@ -139,8 +133,32 @@ int main (int argc, char * argv[])
   W_xp[3] = p_in[1];        W_xp[4] = 1.0 + p_in[3];  W_xp[5] = p_in[5];
   W_xp[6] = 0.0;            W_xp[7] = 0.0;            W_xp[8] = 1.0;
 
-  warp_image (gradX, M, N, W_xp, gradX_warped);
-  warp_image (gradY, M, N, W_xp, gradY_warped);
+
+  /*for loop to compress image */
+
+  /*for(i = 0; i < 256; i++) {
+    for(j = 0; j < 512; j += 2) {
+
+      index = i*1024 + j;
+      printf("%i\n", index);
+      avg = (float)(dx[index] + dx[index+1] + dx[index+512] + dx[index+513])/4;
+      fprintf(dxptr, "%f,\n", avg);
+    }
+  }
+
+  for(i = 0; i < 256; i++) {
+    for(j = 0; j < 512; j += 2) {
+
+      index = i*1024 + j;
+      printf("%i\n", index);
+      avg = (float)(dy[index] + dy[index+1] + dy[index+512] + dy[index+513])/4;
+      fprintf(dyptr, "%f,\n", avg);
+    }
+  }*/
+
+
+  warp_image (dx_256, M, N, W_xp, gradX_warped);
+  warp_image (dy_256, M, N, W_xp, gradY_warped);
   
   /* Compute the steepest descent images Gradient * Jacobian */
   steepest_descent (gradX_warped, gradY_warped, M, N, I_steepest);
@@ -148,8 +166,6 @@ int main (int argc, char * argv[])
   /* Compute the Hessian matrix */
   hessian (I_steepest, M, N, 6, H);
 
-  free (gradX);
-  free (gradY);
   free (gradX_warped);
   free (gradY_warped);
   free (I_steepest);

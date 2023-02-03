@@ -1,4 +1,6 @@
-float dy[] = {-984.967041,
+#include "wami_lucas_kanade.h"
+
+fltPixel_t dy[] = {-984.967041,
 7.613616,
 19.615107,
 -1.658447,

@@ -1,4 +1,6 @@
-float dx[] = {-1044.413330,
+#include "wami_lucas_kanade.h"
+
+fltPixel_t dx[] = {-1044.413330,
 -527.338562,
 -3.639966,
 7.053998,
