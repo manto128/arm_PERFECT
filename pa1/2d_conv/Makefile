@@ -2,12 +2,12 @@ TC_PATH = $(PWD)/../../../gcc-arm-none-eabi
 TOOLCHAIN = $(TC_PATH)/bin/arm-none-eabi
 CC = $(TOOLCHAIN)-gcc
 CHIP = cortex-m0plus
-OPTLVL = -O3 
+OPTLVL = -O0
 
 FLAGS = -Wall $(OPTLVL) -march=armv6s-m -mcpu=$(CHIP) -mthumb -msoft-float --specs=nosys.specs -nostartfiles -ffreestanding -std=c99 -fomit-frame-pointer -fno-optimize-sibling-calls -Wa,-adhln=output.lst 
 LIBS = -lnosys -lc -lm
 
-OBJS = timer.o 2dconv.o main.o 
+OBJS = timer.o 2dconv_multi.o main.o 
 
 OBJS := vectors.o putget.o supportFuncs.o LED.o $(OBJS)
 LINKDIR=-L$(TC_PATH)/$(TOOLCHAIN)/lib

@@ -102,10 +102,34 @@
 // #define printf(...)
 // #define fprintf(...)
 // #define fflush(...)
+#define MAGIC_INSTRUCTION __asm__ __volatile__ ("mov r9, r9");
 
-int
-conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filter, float normFactor, int nFilterRows, int nFilterCols)
+typedef struct {
+  int tid;
+  algPixel_t *in;
+  algPixel_t *out;
+  int nRows;
+  int nCols;
+  fltPixel_t *filter;
+  float normFactor;
+  int nFilterRows;
+  int nFilterCols;
+  algPixel_t *tmpBuf;
+} params_t;
+
+void *conv2d_thd (void *params_thd)
 {
+  params_t *params = (params_t *)params_thd;
+  int tid = params->tid;
+  algPixel_t *in = params->in;
+  algPixel_t *out = params->out;
+  int nRows = params->nRows;
+  int nCols = params->nCols;
+  fltPixel_t *filter = params->filter;
+  float normFactor = params->normFactor;
+  int nFilterRows = params->nFilterRows;
+  int nFilterCols = params->nFilterCols;
+  algPixel_t *tmpBuf = params->tmpBuf;
   float sum = 0.0;
   int m = 0, n = 0;
   int i = 0, j = 0;
@@ -117,23 +141,7 @@ conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filte
   int pxlPos = 0;
   int fltPos = 0;
 
-  algPixel_t *tmpBuf = (algPixel_t *)calloc((nRows + nFilterRows) * (nCols + nFilterCols), sizeof(algPixel_t));
-  if (!tmpBuf)
-  {
-    // fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);
-    return -1;
-  }
-
-  for (row = 0; row < nRows; row++)
-  {
-    {
-      memcpy((void *)(tmpBuf + (row + rowOffset) * (nCols + nFilterCols) + colOffset), 
-	  (void *)(in + row * nCols), 
-	  nCols * sizeof(algPixel_t));
-    }
-  }
-
-  for (row = rowBegIndex; row < nRows + rowOffset; row++)
+  for (row = rowBegIndex + (tid * nRows / 4); row < (((tid+1) * nRows / 4) + rowOffset); row++)
   {
     for (col = colBegIndex; col < nCols + colOffset; col++)
     {
@@ -153,9 +161,63 @@ conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filte
       }
       out[(row - rowBegIndex) * nCols + (col - colBegIndex)] = (algPixel_t) (sum / normFactor);
     }
-      __asm__("nop");
-
   }
+
+  return NULL;
+}
+
+int
+conv2d (algPixel_t *in, algPixel_t *out, int nRows, int nCols, fltPixel_t *filter, float normFactor, int nFilterRows, int nFilterCols)
+{
+  // int tid;
+  params_t params[4];
+  // pthread_t thds[4];
+  int row = 0, col = 0;
+  int rowOffset = nFilterRows / 2;
+  int colOffset = nFilterCols / 2;
+  
+  algPixel_t *tmpBuf = (algPixel_t *)calloc((nRows + nFilterRows) * (nCols + nFilterCols), sizeof(algPixel_t));
+  if (!tmpBuf)
+  {
+    // fprintf(stderr, "File %s, Line %d, Memory Allocation Error\n", __FILE__, __LINE__);
+    return -1;
+  }
+
+  for (row = 0; row < nRows; row++)
+  {
+    {
+      memcpy((void *)(tmpBuf + (row + rowOffset) * (nCols + nFilterCols) + colOffset), 
+	  (void *)(in + row * nCols), 
+	  nCols * sizeof(algPixel_t));
+    }
+  }
+  
+  int tid;
+  for (tid = 0; tid < 4; tid++) {
+    params[tid].tid = tid;
+    params[tid].in = in;
+    params[tid].out = out;
+    params[tid].nRows = nRows;
+    params[tid].nCols = nCols;
+    params[tid].filter = filter;
+    params[tid].normFactor = normFactor;
+    params[tid].nFilterRows = nFilterRows;
+    params[tid].nFilterCols = nFilterCols;
+    params[tid].tmpBuf = tmpBuf;
+  }
+  
+  //LVA_FUNCTION(3, &in[0], &in[nRows * nCols - 1], 0);
+  // LVA_FUNCTION(3, (char *)&in[0] + 64, (char *)&in[nRows * nCols - 1] - 64, 0);
+  //LVA_FUNCTION(3, &out[0], &out[nRows * nCols - 1], 0);
+  //LVA_FUNCTION(3, &tmpBuf[0], &tmpBuf[(nRows + nFilterRows) * (nCols + nFilterCols) - 1], 0);
+  // LVA_FUNCTION(3, (char *)&tmpBuf[0] + 64, (char *)&tmpBuf[(nRows + nFilterRows) * (nCols + nFilterCols) - 1] - 64, 0);
+  // for (tid = 1; tid < 4; tid++) pthread_create(&thds[tid], NULL, conv2d_thd, &params[tid]);
+  MAGIC_INSTRUCTION;
+  tid = 1;
+  conv2d_thd(&params[0]);
+  MAGIC_INSTRUCTION;
+  // for (tid = 1; tid < 4; tid++) pthread_join(thds[tid], NULL);
+  // LVA_BX_INSTRUCTION;
 
   free((void *)tmpBuf);
 
